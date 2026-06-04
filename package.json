@@ -19,7 +19,9 @@
     "ci-gas-calc": "yarn gas-calc && yarn check-gas-reports",
     "check-gas-reports": "./scripts/check-gas-reports",
     "depcheck": "depcheck",
-    "runop": "hardhat run src/runop.ts "
+    "runop": "hardhat run src/runop.ts ",
+    "onboard:ndachain": "hardhat onboard-ndachain --network ndachain",
+    "onboard:ndachain:dry": "hardhat onboard-ndachain --network ndachain --dryrun"
   },
   "keywords": [],
   "author": "",

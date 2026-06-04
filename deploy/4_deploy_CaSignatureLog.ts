@@ -7,7 +7,8 @@ const deployCaSignatureLog: DeployFunction = async function (hre: HardhatRuntime
   const from = await provider.getSigner().getAddress()
   const network = await provider.getNetwork()
 
-  if (network.chainId !== 31337 && network.chainId !== 1337) {
+  const chainId = Number(network.chainId)
+  if (chainId !== 31337 && chainId !== 1337 && chainId !== 704) {
     return
   }
 

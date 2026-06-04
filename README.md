@@ -36,10 +36,44 @@ Account abstraction allows users to interact with Ethereum using smart contract 
 
 - **CaSignatureLog** (`contracts/CaSignatureLog.sol`): On-chain public log of per-transaction RSA signatures (`UserCaSignatureRecorded` event). Callable only by `PUBLISHER_ROLE` (identity service).
 
-- **Simple7702Account** (`contracts/accounts/Simple7702Account.sol`): A minimal account to be used with EIP-7702 (for batching) and ERC-4337 (for gas sponsoring)
+### NDAChain deploy (hardhat-deploy)
+
+On localhost / NDAChain, deploy only:
+
+0. `0_deploy_Create2Deployer.ts` — Arachnid-compatible CREATE2 proxy (your allowlisted key on NDAChain)
+1. `1_deploy_entrypoint.ts` — `NDAEntryPoint` (saved as `EntryPoint`)
+2. `2_deploy_NDAAccountFactory.ts` — `NDAAccountFactory` + `TestCounter`
+3. `4_deploy_CaSignatureLog.ts` — `CaSignatureLog`
+
+`Simple7702Account` remains in the repo for upstream EIP-7702 tests only; it is **not** deployed for NDA.
+
+### Onboard smart account on NDAChain (from `onboarding.json`)
+
+After deploy, create the per-identity account (CREATE2 via `NDAAccountFactory`, salt from `UID=` in certificate subject):
+
+```bash
+yarn onboard:ndachain
+yarn onboard:ndachain:dry
+# custom JSON:
+npx hardhat onboard-ndachain --network ndachain --file ./test/onboarding.json
+```
+
+- `NDA_ACCOUNT_OWNER` — optional owner address (default: bundler / `NDACHAIN_PRIVATE_KEY`)
+- `ONBOARDING_JSON` — optional path to onboarding JSON (default: `test/onboarding.json`)
+- Counterfactual address: `NDAAccountFactory.getAddress(owner, keccak256(utf8(uid)))`
+- The onboarding script sets `gasLimit: 5_000_000` on the outer `handleOps` tx; default RPC estimation (~230k) reverts on account creation.
+
+This is separate from EntryPoint singleton deploy (global CREATE2 proxy does not work on Besu).
 
 ### NDAChain deploy env
 
+Create `account-abstraction/.env` (loaded automatically by `hardhat.config.ts`):
+
+- `NDACHAIN_RPC_URL` — optional; defaults to `http://10.0.1.60:8545`
+- `NDACHAIN_PRIVATE_KEY` — allowlisted deployer key for `--network ndachain` (required on NDAChain)
+- `NDACHAIN_FORCE_DETERMINISTIC` — set `true` to force CREATE2 + `SALT` on NDAChain (usually fails on Besu; direct deploy is default on chain 704)
+
+**NDAChain (704) deploy:** `NDAEntryPoint` and `NDAAccountFactory` use **direct deploy** (~5M gas), not CREATE2. Besu rejects CREATE2 initcode deploys even at 22M–50M+ gas (`gasUsed` ≈ entire `gasLimit`). `Create2Deployer` (step 0) is optional for tooling; per-user account CREATE2 via `NDAAccountFactory` still works. EntryPoint address on NDA will differ from SALT-canonical mainnet addresses.
 - `IDENTITY_SERVICE_PUBLISHER` — address granted `PUBLISHER_ROLE` on `CaSignatureLog` (defaults to deployer on localhost)
 
 
