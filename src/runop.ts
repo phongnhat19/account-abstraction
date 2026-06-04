@@ -27,7 +27,7 @@ import { TransactionReceipt } from '@ethersproject/abstract-provider/src.ts/inde
   const [entryPointAddress, testCounterAddress, accountFactoryAddress] = await Promise.all([
     hre.deployments.get('EntryPoint').then(d => d.address),
     hre.deployments.get('TestCounter').then(d => d.address),
-    hre.deployments.get('SimpleAccountFactory').then(d => d.address)
+    hre.deployments.get('NDAAccountFactory').then(d => d.address)
   ])
 
   console.log('entryPointAddress:', entryPointAddress, 'testCounterAddress:', testCounterAddress)

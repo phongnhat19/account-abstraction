@@ -6,9 +6,9 @@ import { toHex } from 'hardhat/internal/util/bigint'
 import {
   ERC1967Proxy__factory,
   EntryPoint,
-  SimpleAccount,
-  SimpleAccountFactory__factory,
-  SimpleAccount__factory,
+  NDAAccount,
+  NDAAccountFactory__factory,
+  NDAAccount__factory,
   TestCounter,
   TestCounter__factory,
   TestUtil,
@@ -29,7 +29,7 @@ import { parseEther } from 'ethers/lib/utils'
 import { UserOperation } from './UserOperation'
 import { JsonRpcProvider } from '@ethersproject/providers'
 
-describe('SimpleAccount', function () {
+describe('NDAAccount', function () {
   let entryPoint: EntryPoint
   let accounts: string[]
   let testUtil: TestUtil
@@ -39,7 +39,6 @@ describe('SimpleAccount', function () {
   before(async function () {
     entryPoint = await deployEntryPoint()
     accounts = await ethers.provider.listAccounts()
-    // ignore in geth.. this is just a sanity test. should be refactored to use a single-account mode..
     if (accounts.length < 2) this.skip()
     testUtil = await new TestUtil__factory(ethersSigner).deploy()
     accountOwner = createAccountOwner()
@@ -52,9 +51,9 @@ describe('SimpleAccount', function () {
   })
   it('other account should not be able to call transfer', async () => {
     const { proxy: account } = await createAccount(ethers.provider.getSigner(), accounts[0], entryPoint.address)
-    const ethersSigner = ethers.provider.getSigner(1)
-    const ethersSignerAddress = await ethersSigner.getAddress()
-    await expect(account.connect(ethersSigner).execute(accounts[2], ONE_ETH, '0x'))
+    const ethersSigner2 = ethers.provider.getSigner(1)
+    const ethersSignerAddress = await ethersSigner2.getAddress()
+    await expect(account.connect(ethersSigner2).execute(accounts[2], ONE_ETH, '0x'))
       .to.be.revertedWith(`NotOwnerOrEntryPoint("${ethersSignerAddress}", "${account.address}", "${entryPoint.address}", "${accounts[0]}")`)
   })
 
@@ -66,7 +65,7 @@ describe('SimpleAccount', function () {
   })
 
   describe('#executeBatch', () => {
-    let account: SimpleAccount
+    let account: NDAAccount
     let counter: TestCounter
     before(async () => {
       ({ proxy: account } = await createAccount(ethersSigner, await ethersSigner.getAddress(), entryPoint.address))
@@ -88,24 +87,20 @@ describe('SimpleAccount', function () {
   })
 
   describe('#validateUserOp', () => {
-    let account: SimpleAccount
+    let account: NDAAccount
     let userOp: UserOperation
     let userOpHash: string
     let preBalance: number
-    let expectedPay: number
 
-    const actualGasPrice = 1e9
-    // for testing directly validateUserOp, we initialize the account with EOA as entryPoint.
     let entryPointEoa: string
 
     before(async () => {
       entryPointEoa = accounts[2]
       const epAsSigner = await ethers.getSigner(entryPointEoa)
 
-      // cant use "SimpleAccountFactory", since it attempts to increment nonce first
-      const implementation = await new SimpleAccount__factory(ethersSigner).deploy(entryPointEoa)
+      const implementation = await new NDAAccount__factory(ethersSigner).deploy(entryPointEoa)
       const proxy = await new ERC1967Proxy__factory(ethersSigner).deploy(implementation.address, '0x')
-      account = SimpleAccount__factory.connect(proxy.address, epAsSigner)
+      account = NDAAccount__factory.connect(proxy.address, epAsSigner)
 
       await ethersSigner.sendTransaction({ from: accounts[0], to: account.address, value: parseEther('0.2') })
       const callGasLimit = 200000
@@ -122,37 +117,33 @@ describe('SimpleAccount', function () {
 
       userOpHash = await getUserOpHash(userOp, entryPointEoa, chainId)
 
-      expectedPay = actualGasPrice * (callGasLimit + verificationGasLimit)
-
       preBalance = await getBalance(account.address)
       const packedOp = packUserOp(userOp)
-      const ret = await account.validateUserOp(packedOp, userOpHash, expectedPay, { gasPrice: actualGasPrice })
+      const ret = await account.validateUserOp(packedOp, userOpHash, 0)
       await ret.wait()
     })
 
-    it('should pay', async () => {
+    it('should not pay prefund on gas-free NDAAccount', async () => {
       const postBalance = await getBalance(account.address)
-      expect(preBalance - postBalance).to.eql(expectedPay)
+      expect(preBalance).to.eql(postBalance)
     })
 
-    it('should return NO_SIG_VALIDATION on wrong signature', async () => {
-      const userOpHash = HashZero
+    it('should return SIG_VALIDATION_SUCCESS even with wrong userOpHash', async () => {
       const packedOp = packUserOp(userOp)
-      const deadline = await account.callStatic.validateUserOp({ ...packedOp, nonce: 1 }, userOpHash, 0)
-      expect(deadline).to.eq(1)
+      const validationData = await account.callStatic.validateUserOp({ ...packedOp, nonce: 1 }, HashZero, 0)
+      expect(validationData).to.eq(0)
     })
   })
 
-  context('SimpleAccountFactory', () => {
+  context('NDAAccountFactory', () => {
     it('should reject calls coming from any address that is not SenderCreator', async () => {
       const ownerAddr = createAddress()
-      let deployer = await new SimpleAccountFactory__factory(ethersSigner).deploy(entryPoint.address)
+      let deployer = await new NDAAccountFactory__factory(ethersSigner).deploy(entryPoint.address)
       const ethersSignerAddress = await ethersSigner.getAddress()
       const senderCreator = await entryPoint.senderCreator()
       await expect(deployer.createAccount(ownerAddr, 1234))
         .to.be.revertedWith(`NotSenderCreator("${ethersSignerAddress}", "${deployer.address}", "${senderCreator}")`)
 
-      // switch deployer contract to an impersonating signer
       await (ethersSigner.provider as JsonRpcProvider).send('hardhat_setBalance', [senderCreator, toHex(100e18)])
       const senderCreatorSigner = await ethers.getImpersonatedSigner(senderCreator)
       deployer = deployer.connect(senderCreatorSigner)

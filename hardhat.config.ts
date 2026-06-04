@@ -9,7 +9,7 @@ const SALT = '0x7702864008ddeab30aa67b7adc3d2653bc8d162714b1fe8fe4582df814f3bf61
 process.env.SALT = process.env.SALT ?? SALT
 
 task('deploy', 'Deploy contracts')
-  .addFlag('simpleAccountFactory', 'deploy sample factory (by default, enabled only on localhost)')
+  .addFlag('ndaAccountFactory', 'deploy NDA account factory (by default, enabled only on localhost)')
 
 const mnemonicFileName = process.env.MNEMONIC_FILE!
 let mnemonic = 'test '.repeat(11) + 'junk'
@@ -52,7 +52,8 @@ const config: HardhatUserConfig = {
     overrides: {
       'contracts/core/EntryPoint.sol': optimizedCompilerSettings,
       'contracts/core/EntryPointSimulations.sol': optimizedCompilerSettings,
-      'contracts/accounts/SimpleAccount.sol': optimizedCompilerSettings
+      'contracts/core/NDAEntryPoint.sol': optimizedCompilerSettings,
+      'contracts/accounts/NDAAccount.sol': optimizedCompilerSettings
     }
   },
   networks: {

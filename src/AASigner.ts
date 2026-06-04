@@ -11,10 +11,10 @@ import { PackedUserOperation, UserOperation } from '../test/UserOperation'
 import {
   EntryPoint,
   EntryPoint__factory,
-  SimpleAccount,
-  SimpleAccountFactory,
-  SimpleAccountFactory__factory,
-  SimpleAccount__factory
+  NDAAccount,
+  NDAAccountFactory,
+  NDAAccountFactory__factory,
+  NDAAccount__factory
 } from '../typechain'
 
 export type SendUserOp = (userOp: UserOperation) => Promise<TransactionResponse | undefined>
@@ -205,11 +205,11 @@ export class AAProvider extends BaseProvider {
  * a signer that wraps account-abstraction.
  */
 export class AASigner extends Signer {
-  _account?: SimpleAccount
+  _account?: NDAAccount
 
   private _isPhantom = true
   public entryPoint: EntryPoint
-  public accountFactory: SimpleAccountFactory
+  public accountFactory: NDAAccountFactory
 
   private _chainId: Promise<number> | undefined
 
@@ -223,7 +223,7 @@ export class AASigner extends Signer {
   constructor (readonly signer: Signer, readonly entryPointAddress: string, readonly sendUserOp: SendUserOp, readonly accountFactoryAddress: string, readonly index = 0, readonly provider = signer.provider) {
     super()
     this.entryPoint = EntryPoint__factory.connect(entryPointAddress, signer)
-    this.accountFactory = SimpleAccountFactory__factory.connect(accountFactoryAddress, signer)
+    this.accountFactory = NDAAccountFactory__factory.connect(accountFactoryAddress, signer)
   }
 
   // connect to a specific pre-deployed address
@@ -235,7 +235,7 @@ export class AASigner extends Signer {
     if (await this.provider!.getCode(address).then(code => code.length) <= 2) {
       throw new Error('cannot connect to non-existing contract')
     }
-    this._account = SimpleAccount__factory.connect(address, this.signer)
+    this._account = NDAAccount__factory.connect(address, this.signer)
     this._isPhantom = false
   }
 
@@ -256,7 +256,7 @@ export class AASigner extends Signer {
     throw new Error('signMessage: unsupported by AA')
   }
 
-  async getAccount (): Promise<SimpleAccount> {
+  async getAccount (): Promise<NDAAccount> {
     await this.syncAccount()
     return this._account!
   }
@@ -351,7 +351,7 @@ export class AASigner extends Signer {
   async syncAccount (): Promise<void> {
     if (this._account == null) {
       const address = await getAccountAddress(await this.signer.getAddress(), this.accountFactory)
-      this._account = SimpleAccount__factory.connect(address, this.signer)
+      this._account = NDAAccount__factory.connect(address, this.signer)
     }
 
     this._chainId = this.provider?.getNetwork().then(net => net.chainId)

@@ -6,7 +6,7 @@ pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import "../accounts/SimpleAccount.sol";
+import "../accounts/NDAAccount.sol";
 import "../interfaces/IAccountExecute.sol";
 
 /**
@@ -14,9 +14,9 @@ import "../interfaces/IAccountExecute.sol";
  * Note that this account does nothing special with the userop, just extract
  * call to execute. In theory, such account can reference the signature, the hash, etc.
  */
-contract TestExecAccount is SimpleAccount, IAccountExecute {
+contract TestExecAccount is NDAAccount, IAccountExecute {
 
-    constructor(IEntryPoint anEntryPoint) SimpleAccount(anEntryPoint){
+    constructor(IEntryPoint anEntryPoint) NDAAccount(anEntryPoint){
     }
 
     event Executed(PackedUserOperation userOp, bytes innerCallRet);

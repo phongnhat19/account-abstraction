@@ -15,10 +15,11 @@ import {
   EntryPoint__factory,
   IERC20,
   Simple7702Account__factory,
-  SimpleAccount,
-  SimpleAccountFactory,
-  SimpleAccountFactory__factory,
-  SimpleAccount__factory,
+  NDAAccount,
+  NDAAccountFactory,
+  NDAAccountFactory__factory,
+  NDAAccount__factory,
+  NDAEntryPoint__factory,
   TestAggregatedAccountFactory,
   TestERC20__factory,
   TestPaymasterRevertCustomError__factory
@@ -100,14 +101,14 @@ export async function calcGasUsage (rcpt: ContractReceipt, entryPoint: EntryPoin
   console.log('\t== calculated gasUsed (paid to beneficiary)=', actualGasUsed)
   const tx = await ethers.provider.getTransaction(rcpt.transactionHash)
   console.log('\t== gasDiff', actualGas.toNumber() - actualGasUsed.toNumber() - callDataCost(tx.data))
-  if (beneficiaryAddress != null) {
+  if (beneficiaryAddress != null && actualGasCost.gt(0)) {
     expect(await getBalance(beneficiaryAddress)).to.eq(actualGasCost.toNumber())
   }
   return { actualGasCost }
 }
 
 // helper function to create the initCode to deploy the account, using our account factory.
-export function getAccountFactoryData (owner: string, factory: SimpleAccountFactory, salt = 0): BytesLike {
+export function getAccountFactoryData (owner: string, factory: NDAAccountFactory, salt: BigNumberish = 0): BytesLike {
   return factory.interface.encodeFunctionData('createAccount', [owner, salt])
 }
 
@@ -118,7 +119,7 @@ export async function getAggregatedAccountFactoryData (entryPoint: string, facto
 }
 
 // given the parameters as AccountDeployer, return the resulting "counterfactual address" that it would create.
-export async function getAccountAddress (owner: string, factory: SimpleAccountFactory, salt = 0): Promise<string> {
+export async function getAccountAddress (owner: string, factory: NDAAccountFactory, salt: BigNumberish = 0): Promise<string> {
   return await factory.getAddress(owner, salt)
 }
 
@@ -279,7 +280,7 @@ export async function checkForBannedOps (txHash: string, checkPaymaster: boolean
 
 export async function deployEntryPoint (provider = ethers.provider): Promise<EntryPoint> {
   const create2factory = new Create2Factory(provider)
-  const addr = toChecksumAddress(await create2factory.deploy(EntryPoint__factory.bytecode, process.env.SALT, process.env.COVERAGE != null ? 20e6 : 8e6))
+  const addr = toChecksumAddress(await create2factory.deploy(NDAEntryPoint__factory.bytecode, process.env.SALT, process.env.COVERAGE != null ? 20e6 : 8e6))
   return EntryPoint__factory.connect(addr, provider.getSigner())
 }
 
@@ -293,22 +294,23 @@ export async function createAccount (
   ethersSigner: Signer,
   accountOwner: string,
   entryPoint: string,
-  _factory?: SimpleAccountFactory
+  _factory?: NDAAccountFactory,
+  salt: BigNumberish = 0
 ):
   Promise<{
-    proxy: SimpleAccount
-    accountFactory: SimpleAccountFactory
+    proxy: NDAAccount
+    accountFactory: NDAAccountFactory
     implementation: string
   }> {
-  const accountFactory = _factory ?? await new SimpleAccountFactory__factory(ethersSigner).deploy(entryPoint)
+  const accountFactory = _factory ?? await new NDAAccountFactory__factory(ethersSigner).deploy(entryPoint)
   const implementation = await accountFactory.accountImplementation()
   const entryPointContract = EntryPoint__factory.connect(entryPoint, ethersSigner)
   const senderCreator = await entryPointContract.senderCreator()
   await (ethersSigner.provider as JsonRpcProvider).send('hardhat_setBalance', [senderCreator, toHex(100e18)])
   const senderCreatorSigner = await ethers.getImpersonatedSigner(senderCreator)
-  await accountFactory.connect(senderCreatorSigner).createAccount(accountOwner, 0)
-  const accountAddress = await accountFactory.getAddress(accountOwner, 0)
-  const proxy = SimpleAccount__factory.connect(accountAddress, ethersSigner)
+  await accountFactory.connect(senderCreatorSigner).createAccount(accountOwner, salt)
+  const accountAddress = await accountFactory.getAddress(accountOwner, salt)
+  const proxy = NDAAccount__factory.connect(accountAddress, ethersSigner)
   return {
     implementation,
     accountFactory,

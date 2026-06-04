@@ -3,10 +3,10 @@ import { expect } from 'chai'
 
 import {
   EntryPoint, EntryPointSimulations, EntryPointSimulations__factory,
-  SimpleAccount,
-  SimpleAccountFactory,
-  SimpleAccountFactory__factory,
-  SimpleAccount__factory,
+  NDAAccount,
+  NDAAccountFactory,
+  NDAAccountFactory__factory,
+  NDAAccount__factory,
   TestCounter__factory,
   TestPaymasterWithPostOp,
   TestPaymasterWithPostOp__factory
@@ -34,9 +34,9 @@ const provider = ethers.provider
 describe('EntryPointSimulations', function () {
   const ethersSigner = ethers.provider.getSigner()
 
-  let account: SimpleAccount
+  let account: NDAAccount
   let accountOwner: Wallet
-  let simpleAccountFactory: SimpleAccountFactory
+  let simpleAccountFactory: NDAAccountFactory
 
   let entryPoint: EntryPoint
   let epSimulation: EntryPointSimulations
@@ -117,7 +117,7 @@ describe('EntryPointSimulations', function () {
 
   describe('#simulateValidation', () => {
     const accountOwner1 = createAccountOwner()
-    let account1: SimpleAccount
+    let account1: NDAAccount
 
     before(async () => {
       ({ proxy: account1 } = await createAccount(ethersSigner, await accountOwner1.getAddress(), entryPoint.address))
@@ -319,12 +319,12 @@ describe('EntryPointSimulations', function () {
   describe('#simulateHandleOp', () => {
     it('should simulate creation', async () => {
       const accountOwner1 = createAccountOwner()
-      const factory = await new SimpleAccountFactory__factory(ethersSigner).deploy(entryPoint.address)
+      const factory = await new NDAAccountFactory__factory(ethersSigner).deploy(entryPoint.address)
       const factoryData = factory.interface.encodeFunctionData('createAccount', [accountOwner1.address, 0])
 
       const sender = await factory.getAddress(accountOwner1.address, 0)
 
-      const account = SimpleAccount__factory.connect(sender, ethersSigner)
+      const account = NDAAccount__factory.connect(sender, ethersSigner)
 
       await fund(sender)
       const counter = await new TestCounter__factory(ethersSigner).deploy()

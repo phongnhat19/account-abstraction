@@ -7,7 +7,7 @@ import {
 import { fillAndSign, fillSignAndPack, packUserOp, encodePaymasterSignature } from './UserOp'
 import { ethers } from 'hardhat'
 import {
-  EntryPoint, SimpleAccount,
+  EntryPoint, NDAAccount,
   TestPaymasterWithSig, TestPaymasterWithSig__factory
 } from '../typechain'
 import { expect } from 'chai'
@@ -20,7 +20,7 @@ describe('#paymaster-signature', () => {
   let paymaster: TestPaymasterWithSig
 
   const beneficiary = createAddress()
-  let account: SimpleAccount
+  let account: NDAAccount
 
   before(async function () {
     entryPoint = await deployEntryPoint()

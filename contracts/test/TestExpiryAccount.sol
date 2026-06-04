@@ -3,7 +3,8 @@ pragma solidity ^0.8.28;
 
 /* solhint-disable gas-custom-errors */
 
-import "../accounts/SimpleAccount.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "../accounts/NDAAccount.sol";
 import "../core/Helpers.sol";
 
 /**
@@ -13,13 +14,13 @@ import "../core/Helpers.sol";
  * other things, like target contracts and methods to be called.
  * also, the "since" value is not really useful, only for testing the entrypoint.
  */
-contract TestExpiryAccount is SimpleAccount {
+contract TestExpiryAccount is NDAAccount {
 
     mapping(address => uint48) public ownerAfter;
     mapping(address => uint48) public ownerUntil;
 
     // solhint-disable-next-line no-empty-blocks
-    constructor(IEntryPoint anEntryPoint) SimpleAccount(anEntryPoint) {}
+    constructor(IEntryPoint anEntryPoint) NDAAccount(anEntryPoint) {}
 
     function initialize(address anOwner) public virtual override initializer {
         super._initialize(anOwner);

@@ -28,11 +28,19 @@ Account abstraction allows users to interact with Ethereum using smart contract 
 
 ## Sample Implementations
 
-- **SimpleAccount** (`contracts/accounts/SimpleAccount.sol`): Basic implementation of an ERC-4337 account
+- **NDAAccount** (`contracts/accounts/NDAAccount.sol`): ERC-4337 account for NDAChain (gas-free). Does not validate `userOp.signature` for CA RSA; Vietnamese CA signatures are published via `CaSignatureLog` after off-chain verification by the identity service.
+
+- **NDAAccountFactory** (`contracts/accounts/NDAAccountFactory.sol`): Factory for `NDAAccount`
+
+- **NDAEntryPoint** (`contracts/core/NDAEntryPoint.sol`): EntryPoint with zero prefund and zero gas settlement for gas-free NDAChain. Deployed as `EntryPoint` via hardhat-deploy.
+
+- **CaSignatureLog** (`contracts/CaSignatureLog.sol`): On-chain public log of per-transaction RSA signatures (`UserCaSignatureRecorded` event). Callable only by `PUBLISHER_ROLE` (identity service).
 
 - **Simple7702Account** (`contracts/accounts/Simple7702Account.sol`): A minimal account to be used with EIP-7702 (for batching) and ERC-4337 (for gas sponsoring)
 
-- **SimpleAccountFactory** (`contracts/accounts/SimpleAccountFactory.sol`): A sample factory contract for SimpleAccount
+### NDAChain deploy env
+
+- `IDENTITY_SERVICE_PUBLISHER` — address granted `PUBLISHER_ROLE` on `CaSignatureLog` (defaults to deployer on localhost)
 
 
 # Developer setup

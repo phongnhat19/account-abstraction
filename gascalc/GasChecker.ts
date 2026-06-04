@@ -8,8 +8,8 @@ import {
   deployEntryPoint, decodeRevertReason
 } from '../test/testutils'
 import {
-  EntryPoint, EntryPoint__factory, SimpleAccountFactory,
-  SimpleAccountFactory__factory, SimpleAccount__factory
+  EntryPoint, EntryPoint__factory, NDAAccountFactory,
+  NDAAccountFactory__factory, NDAAccount__factory
 } from '../typechain'
 import { BigNumberish, Wallet } from 'ethers'
 import hre from 'hardhat'
@@ -18,7 +18,7 @@ import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import { table, TableUserConfig } from 'table'
 import { Create2Factory } from '../src/Create2Factory'
 import * as fs from 'fs'
-import { SimpleAccountInterface } from '../typechain/contracts/accounts/SimpleAccount'
+import { NDAAccountInterface } from '../typechain/contracts/accounts/NDAAccount'
 import { PackedUserOperation } from '../test/UserOperation'
 import { expect } from 'chai'
 import Debug from 'debug'
@@ -95,12 +95,12 @@ export class GasChecker {
 
   accountOwner: Wallet
 
-  accountInterface: SimpleAccountInterface
+  accountInterface: NDAAccountInterface
   private locked: boolean
 
   constructor () {
     this.accountOwner = createAccountOwner()
-    this.accountInterface = SimpleAccount__factory.createInterface()
+    this.accountInterface = NDAAccount__factory.createInterface()
     void GasCheckCollector.init()
   }
 
@@ -110,7 +110,7 @@ export class GasChecker {
   }
 
   // generate the account "creation code"
-  accountFactoryData (factory: SimpleAccountFactory, salt: BigNumberish): string {
+  accountFactoryData (factory: NDAAccountFactory, salt: BigNumberish): string {
     return factory.interface.encodeFunctionData('createAccount', [this.accountOwner.address, salt])
   }
 
@@ -126,11 +126,11 @@ export class GasChecker {
     const create2Factory = new Create2Factory(this.entryPoint().provider)
     const factoryAddress = await create2Factory.deploy(
       hexConcat([
-        SimpleAccountFactory__factory.bytecode,
+        NDAAccountFactory__factory.bytecode,
         defaultAbiCoder.encode(['address'], [this.entryPoint().address])
       ]), 0, 2885201)
     debug('factaddr', factoryAddress)
-    const factory = SimpleAccountFactory__factory.connect(factoryAddress, globalSigner)
+    const factory = NDAAccountFactory__factory.connect(factoryAddress, globalSigner)
     // create accounts
     const creationOps: PackedUserOperation[] = []
     for (const n of range(count)) {

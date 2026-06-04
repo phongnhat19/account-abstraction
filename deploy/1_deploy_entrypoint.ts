@@ -8,13 +8,14 @@ const deployEntryPoint: DeployFunction = async function (hre: HardhatRuntimeEnvi
 
   const ret = await hre.deployments.deploy(
     'EntryPoint', {
+      contract: 'NDAEntryPoint',
       from,
       args: [],
       gasLimit: 6e6,
       deterministicDeployment: process.env.SALT ?? true,
       log: true
     })
-  console.log('==entrypoint addr=', ret.address)
+  console.log('==NDAEntryPoint (EntryPoint) addr=', ret.address)
 }
 
 export default deployEntryPoint

@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 /* solhint-disable no-inline-assembly */
 
-import "../accounts/SimpleAccount.sol";
+import "../accounts/NDAAccount.sol";
 
 contract TestRevertAccount is IAccount {
     IEntryPoint private ep;

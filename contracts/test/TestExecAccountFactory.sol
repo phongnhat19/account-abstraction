@@ -5,7 +5,10 @@ pragma solidity ^0.8.28;
 /* solhint-disable gas-custom-errors */
 
 import "@openzeppelin/contracts/utils/Create2.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
+import "../accounts/NDAAccount.sol";
+import "../interfaces/IEntryPoint.sol";
 import "./TestExecAccount.sol";
 
 contract TestExecAccountFactory {
@@ -23,7 +26,7 @@ contract TestExecAccountFactory {
         }
         ret = address(new ERC1967Proxy{salt: bytes32(salt)}(
             address(accountImplementation),
-            abi.encodeCall(SimpleAccount.initialize, (owner))
+            abi.encodeCall(NDAAccount.initialize, (owner))
         ));
     }
 
@@ -35,7 +38,7 @@ contract TestExecAccountFactory {
             type(ERC1967Proxy).creationCode,
             abi.encode(
                 address(accountImplementation),
-                abi.encodeCall(SimpleAccount.initialize, (owner))
+                abi.encodeCall(NDAAccount.initialize, (owner))
             )
         )));
     }
