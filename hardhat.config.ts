@@ -82,6 +82,27 @@ function readCreate2FactoryAddress (chainId: number): string | undefined {
   return undefined
 }
 
+/** Domain chains: same CREATE2 factory address in .env on every network. */
+function resolveCreate2FactoryAddress (chainId: number): string | undefined {
+  if (chainId === 704 || chainId === 678) {
+    const envFactory = (process.env.DOMAIN_CREATE2_FACTORY ?? process.env.NDACHAIN_CREATE2_FACTORY)?.trim()
+    if (envFactory != null && envFactory !== '') {
+      return envFactory
+    }
+  }
+  return readCreate2FactoryAddress(chainId)
+}
+
+/** Smaller initcode helps CREATE2 deploy on Besu domain chains (viaIR + 1M runs ~24KB initcode). */
+const entryPointCompilerSettings = {
+  version: '0.8.28',
+  settings: {
+    evmVersion: 'cancun',
+    optimizer: { enabled: true, runs: 200 },
+    viaIR: false
+  }
+}
+
 const optimizedCompilerSettings = {
   version: '0.8.28',
   settings: {
@@ -96,7 +117,7 @@ const optimizedCompilerSettings = {
 
 const config: HardhatUserConfig = {
   deterministicDeployment: (chainId: number) => {
-    const factory = readCreate2FactoryAddress(chainId)
+    const factory = resolveCreate2FactoryAddress(chainId)
     if (factory != null) {
       return { factory }
     }
@@ -114,7 +135,8 @@ const config: HardhatUserConfig = {
     overrides: {
       'contracts/core/EntryPoint.sol': optimizedCompilerSettings,
       'contracts/core/EntryPointSimulations.sol': optimizedCompilerSettings,
-      'contracts/core/NDAEntryPoint.sol': optimizedCompilerSettings,
+      'contracts/core/NDAEntryPoint.sol': entryPointCompilerSettings,
+      // 'contracts/core/EntryPoint.sol': entryPointCompilerSettings,
       'contracts/accounts/NDAAccount.sol': optimizedCompilerSettings
     }
   },

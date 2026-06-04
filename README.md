@@ -71,9 +71,33 @@ Create `account-abstraction/.env` (loaded automatically by `hardhat.config.ts`):
 
 - `NDACHAIN_RPC_URL` — optional; defaults to `http://10.0.1.60:8545`
 - `NDACHAIN_PRIVATE_KEY` — allowlisted deployer key for `--network ndachain` (required on NDAChain)
-- `NDACHAIN_FORCE_DETERMINISTIC` — set `true` to force CREATE2 + `SALT` on NDAChain (usually fails on Besu; direct deploy is default on chain 704)
+- `DOMAIN_CREATE2_FACTORY` — your CREATE2 deployer address (must be the **same** on every domain chain)
+- `NDACHAIN_CREATE2_FACTORY` — alias for `DOMAIN_CREATE2_FACTORY` on NDAChain
+- `DOMAIN_ENTRYPOINT_DIRECT_DEPLOY` / `NDACHAIN_ENTRYPOINT_DIRECT_DEPLOY` — skip CREATE2 (unique address per chain)
 
-**NDAChain (704) deploy:** `NDAEntryPoint` and `NDAAccountFactory` use **direct deploy** (~5M gas), not CREATE2. Besu rejects CREATE2 initcode deploys even at 22M–50M+ gas (`gasUsed` ≈ entire `gasLimit`). `Create2Deployer` (step 0) is optional for tooling; per-user account CREATE2 via `NDAAccountFactory` still works. EntryPoint address on NDA will differ from SALT-canonical mainnet addresses.
+### Same EntryPoint address on all domain chains (704, 678, …)
+
+Not required to match Ethereum mainnet. Same address on **your** chains when these match:
+
+1. **`DOMAIN_CREATE2_FACTORY`** — same contract address on every domain chain (e.g. `Create2Deployer` from step 0)
+2. **`SALT`** — from `hardhat.config.ts`
+3. **`NDAEntryPoint` artifact** — same `npx hardhat compile` output (pinned compiler settings)
+
+Preview:
+
+```bash
+DOMAIN_CREATE2_FACTORY=0xYourFactory npx hardhat run scripts/entrypoint-create2-address.ts
+```
+
+Deploy on each domain chain (CREATE2, ~1M gas with compact EntryPoint build):
+
+```bash
+# .env: DOMAIN_CREATE2_FACTORY=0xDFf4Bd984CB4f20fD5E4320a9FAa09030CF7bE3c
+npx hardhat deploy --network ndachain --tags EntryPoint
+npx hardhat deploy --network pilachain --tags EntryPoint
+```
+
+`NDAEntryPoint` uses a smaller compiler profile (`viaIR: false`, `runs: 200`) so Besu CREATE2 initcode deploy succeeds. After changing EntryPoint, redeploy `NDAAccountFactory` so it points at the new EntryPoint address.
 - `IDENTITY_SERVICE_PUBLISHER` — address granted `PUBLISHER_ROLE` on `CaSignatureLog` (defaults to deployer on localhost)
 
 

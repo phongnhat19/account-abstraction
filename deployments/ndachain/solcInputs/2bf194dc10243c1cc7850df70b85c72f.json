@@ -1,0 +1,37 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/utils/Create2Deployer.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\n/**\n * @title Create2Deployer\n * @notice Arachnid-compatible CREATE2 proxy (same calldata as 0x4e59…): salt (32 bytes) || initCode.\n *         Deploy this contract with an allowlisted key on permissioned chains; it is not\n *         possible to install bytecode at 0x4e59… without the global pre-signed bootstrap tx.\n */\ncontract Create2Deployer {\n    fallback() external payable {\n        assembly {\n            let codeSize := sub(calldatasize(), 32)\n            // calldata layout: [salt(32 bytes) | initCode...]\n            // copy initCode into memory before CREATE2\n            calldatacopy(0, 32, codeSize)\n            let addr := create2(0, 0, codeSize, calldataload(0))\n            if iszero(addr) {\n                revert(0, 0)\n            }\n            mstore(0, addr)\n            return(0, 0x20)\n        }\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "evmVersion": "cancun",
+    "viaIR": true,
+    "optimizer": {
+      "enabled": true,
+      "runs": 1000000
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

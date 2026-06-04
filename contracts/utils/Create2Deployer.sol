@@ -10,7 +10,11 @@ pragma solidity ^0.8.28;
 contract Create2Deployer {
     fallback() external payable {
         assembly {
-            let addr := create2(0, 32, sub(calldatasize(), 32), calldataload(0))
+            let codeSize := sub(calldatasize(), 32)
+            // calldata layout: [salt(32 bytes) | initCode...]
+            // copy initCode into memory before CREATE2
+            calldatacopy(0, 32, codeSize)
+            let addr := create2(0, 0, codeSize, calldataload(0))
             if iszero(addr) {
                 revert(0, 0)
             }
