@@ -1,6 +1,8 @@
+import 'hardhat-deploy/dist/src/type-extensions'
 import '@nomiclabs/hardhat-waffle'
 import '@typechain/hardhat'
 import { HardhatUserConfig, task } from 'hardhat/config'
+import type { DeterministicDeploymentInfo } from 'hardhat-deploy/types'
 import 'hardhat-deploy'
 
 import * as fs from 'fs'
@@ -116,10 +118,10 @@ const optimizedCompilerSettings = {
 // Go to https://hardhat.org/config/ to learn more
 
 const config: HardhatUserConfig = {
-  deterministicDeployment: (chainId: number) => {
-    const factory = resolveCreate2FactoryAddress(chainId)
+  deterministicDeployment: (chainId: string): DeterministicDeploymentInfo | undefined => {
+    const factory = resolveCreate2FactoryAddress(Number(chainId))
     if (factory != null) {
-      return { factory }
+      return { factory } as DeterministicDeploymentInfo
     }
     return undefined
   },

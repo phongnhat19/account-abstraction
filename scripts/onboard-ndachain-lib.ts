@@ -46,7 +46,7 @@ export async function onboardNdaChain (options: OnboardNdaChainOptions): Promise
     )
   }
 
-  const bundler = await ethers.getSigner()
+  const bundler = ethers.provider.getSigner()
   const bundlerAddress = await bundler.getAddress()
   const identityOwner = process.env.NDA_ACCOUNT_OWNER ?? bundlerAddress
 
